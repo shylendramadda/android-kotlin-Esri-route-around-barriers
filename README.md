@@ -1,10 +1,10 @@
-# Android ESRI Route Barriers #
+# Android ESRI Route Barriers in Kotlin #
 
 This Android ESRI Route around Barriers demonstrates how to generate a route among multiple stops taking into account different barriers.
 
 ### What is this repository for? ###
 
-* This Android ESRI Route around Barriers demonstrates how to generate a route among multiple stops taking into account different barriers.
+* This Android ESRI Route around Barriers demonstrates how to generate a route among multiple stops taking into account different barriers in Android with Kotlin language.
 * Which is already implemented in iOS here: https://developers.arcgis.com/ios/latest/swift/sample-code/route-around-barriers/
 * Which already implemented in .Net Xamarin here: https://developers.arcgis.com/net/latest/android/sample-code/route-around-barriers/
 
