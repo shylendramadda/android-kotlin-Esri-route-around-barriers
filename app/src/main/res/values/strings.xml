@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">ESRIBarriers</string>
+    <string name="add_facility">Add Facility</string>
+    <string name="add_barrier">Add Barrier</string>
+    <string name="show_service_areas">Show Service Areas</string>
+    <string name="reset">Reset</string>
+    <string name="san_diego_service_area">https://sampleserver6.arcgisonline.com/arcgis/rest/services/NetworkAnalysis/SanDiego/NAServer/ServiceArea</string>
+    <string name="hospital_icon_url">http://static.arcgis.com/images/Symbols/SafetyHealth/Hospital.png</string>
+    <string name="add_poly_line">Add Poly Line</string>
+    <string name="add_polygon">Add Polygon</string>
+    <string name="instructions">Instructions</string>
+    <string name="add_stop">Add stop</string>
+    <string name="allow_stops_to_be_re_ordered">Allow stops to be re-ordered</string>
+    <string name="preserve_first_stop">Preserve first stop</string>
+    <string name="preserve_last_stop">Preserve last stop</string>
+    <string name="route">Route</string>
+    <string name="show_directions">Show directions</string>
+</resources>
