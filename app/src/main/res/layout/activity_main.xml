@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
@@ -24,63 +25,86 @@
             android:text="@string/instructions"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:scrollbars="horizontal">
 
-            <Button
-                android:id="@+id/addStopButton"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/add_stop"
-                tools:text="Add stop" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/addBarrierButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/add_barrier"
-                tools:text="Add barrier" />
+                <Button
+                    android:id="@+id/addStopButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_stop" />
 
-            <Button
-                android:id="@+id/resetButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/reset"
-                tools:text="Reset" />
+                <Button
+                    android:id="@+id/addBarrierButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_barrier" />
 
-        </LinearLayout>
+                <Button
+                    android:id="@+id/resetButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reset" />
+
+                <Button
+                    android:id="@+id/addPolygonButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_polygon" />
+
+                <Button
+                    android:id="@+id/addPolylineButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_poly_line" />
+
+                <Button
+                    android:id="@+id/addPointButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_point" />
+
+                <Button
+                    android:id="@+id/addCircleButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_circle" />
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
 
         <CheckBox
             android:id="@+id/reorderStopsCheckbox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/allow_stops_to_be_re_ordered"
-            tools:text="Allow stops to be re-ordered" />
+            android:text="@string/allow_stops_to_be_re_ordered" />
 
         <CheckBox
             android:id="@+id/preserveFirstStopCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            android:text="@string/preserve_first_stop"
-            tools:text="Preserve first stop" />
+            android:text="@string/preserve_first_stop" />
 
         <CheckBox
             android:id="@+id/preserveLastStopCheckbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
-            android:text="@string/preserve_last_stop"
-            tools:text="Preserve last stop" />
+            android:text="@string/preserve_last_stop" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:orientation="horizontal">
 
             <Button
@@ -88,16 +112,21 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/route"
-                tools:text="Route" />
+                android:text="@string/route" />
 
             <Button
                 android:id="@+id/directionsButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/show_directions"
-                tools:text="Show directions" />
+                android:text="@string/show_directions" />
+
+            <Button
+                android:id="@+id/nextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/next" />
         </LinearLayout>
 
     </LinearLayout>

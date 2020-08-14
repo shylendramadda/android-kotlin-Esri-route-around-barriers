@@ -1,6 +1,7 @@
 package com.threeframes.esribarriers
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
@@ -12,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.esri.arcgisruntime.geometry.*
 import com.esri.arcgisruntime.loadable.LoadStatus
 import com.esri.arcgisruntime.mapping.ArcGISMap
@@ -30,10 +32,15 @@ class MainActivity : AppCompatActivity() {
 
     // Track the current state of the sample.
     private lateinit var currentSampleState: SampleState
+    private val defaultMapScale: Double = 102000.0
+    private val spatialReference = SpatialReferences.getWgs84()
     // Graphics overlays to maintain the stops, barriers, and route result.
     private lateinit var routeOverlay: GraphicsOverlay
     private lateinit var stopsOverlay: GraphicsOverlay
     private lateinit var barriersOverlay: GraphicsOverlay
+    private lateinit var graphicsOverlay: GraphicsOverlay
+    private lateinit var planarGraphicsOverlay: GraphicsOverlay
+    private lateinit var tapLocationsOverlay: GraphicsOverlay
     // The route task manages routing work.
     private lateinit var routeTask: RouteTask
     // The route parameters defines how the route will be calculated.
@@ -45,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var stopMarker: PictureMarkerSymbol
     // Hold a list of directions.
     private var directions = mutableListOf<DirectionManeuver>()
+    private var currentViewpoint = Point(32.7157, -117.1611)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,12 +70,42 @@ class MainActivity : AppCompatActivity() {
         routeOverlay = GraphicsOverlay()
         stopsOverlay = GraphicsOverlay()
         barriersOverlay = GraphicsOverlay()
+        graphicsOverlay = GraphicsOverlay()
+
+        // create a fill symbol for planar buffer polygons
+        val planarOutlineSymbol = SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.BLACK, 2F)
+        val planarBufferFillSymbol = SimpleFillSymbol(
+            SimpleFillSymbol.Style.SOLID, Color.RED, planarOutlineSymbol
+        )
+
+        // create a graphics overlay to display planar polygons and set its renderer
+        planarGraphicsOverlay = GraphicsOverlay().apply {
+            renderer = SimpleRenderer(planarBufferFillSymbol)
+            opacity = 0.2f
+        }
+
+        // create a marker symbol for tap locations
+        val tapSymbol = SimpleMarkerSymbol(SimpleMarkerSymbol.Style.CROSS, Color.BLACK, 14F)
+
+        // create a graphics overlay to display tap locations for buffers and set its renderer
+        tapLocationsOverlay = GraphicsOverlay().apply {
+            renderer = SimpleRenderer(tapSymbol)
+        }
 
         // Add graphics overlays to the map view.
-        mapView.graphicsOverlays.addAll(listOf(routeOverlay, stopsOverlay, barriersOverlay))
+        mapView.graphicsOverlays.addAll(
+            listOf(
+                routeOverlay,
+                stopsOverlay,
+                barriersOverlay,
+                graphicsOverlay,
+                planarGraphicsOverlay,
+                tapLocationsOverlay
+            )
+        )
 
         // Create and initialize the route task.
-        routeTask = RouteTask(this, routeServiceUrl)
+        routeTask = RouteTask(this@MainActivity, routeServiceUrl)
         routeTask.loadAsync()
 
         // Get the route parameters from the route task.
@@ -80,9 +118,9 @@ class MainActivity : AppCompatActivity() {
         // Prepare symbols.
         routeSymbol = SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.BLUE, 2.0f)
         barrierSymbol = SimpleFillSymbol(SimpleFillSymbol.Style.CROSS, Color.RED, null)
+        stopMarker = getPictureMarker()
 
         updateInterfaceState(SampleState.Ready)
-        listenToMapTap()
 
         addStopButton.setOnClickListener {
             updateInterfaceState(SampleState.AddingStops)
@@ -95,6 +133,9 @@ class MainActivity : AppCompatActivity() {
             stopsOverlay.graphics.clear()
             barriersOverlay.graphics.clear()
             routeOverlay.graphics.clear()
+            graphicsOverlay.graphics.clear()
+            planarGraphicsOverlay.graphics.clear()
+            tapLocationsOverlay.graphics.clear()
             directions.clear()
             updateInterfaceState(SampleState.Ready)
         }
@@ -106,7 +147,101 @@ class MainActivity : AppCompatActivity() {
         directionsButton.setOnClickListener {
             showDirections()
         }
-        stopMarker = getPictureMarker()
+        nextButton.setOnClickListener {
+            startActivity(Intent(this, SecondActivity::class.java))
+        }
+        addPolygonButton.setOnClickListener {
+            graphicsOverlay.graphics.clear()
+            addPolygon()
+        }
+        addPolylineButton.setOnClickListener {
+            graphicsOverlay.graphics.clear()
+            addPolyline()
+        }
+        addPointButton.setOnClickListener {
+            graphicsOverlay.graphics.clear()
+            addPoint()
+        }
+        addCircleButton.setOnClickListener {
+            updateInterfaceState(SampleState.AddingCircle)
+        }
+        listenToMapTap()
+    }
+
+    private fun addCirclePolyGon(mapPoint: Point) {
+        // create a planar buffer graphic around the input location at the specified distance
+        val bufferGeometryPlanar = GeometryEngine.buffer(mapPoint as Geometry, 10.0)
+        val planarBufferGraphic = Graphic(bufferGeometryPlanar)
+
+        // create a graphic for the user tap location
+        val locationGraphic = Graphic(mapPoint as Geometry)
+
+        // add the buffer polygons and tap location graphics to the appropriate graphic overlays
+        planarGraphicsOverlay.graphics.add(planarBufferGraphic)
+        tapLocationsOverlay.graphics.add(locationGraphic)
+
+        // set map view point
+        currentViewpoint = Point(mapPoint.x, mapPoint.y)
+        mapView.setViewpointCenterAsync(currentViewpoint, 2000.0)
+    }
+
+    private fun addPoint() {
+        // create point
+        val pointGeometry = Point(77.63, 12.95, SpatialReferences.getWgs84())
+        // create graphic for point
+        val pointGraphic = Graphic(pointGeometry)
+        // red diamond point symbol
+        val pointSymbol = SimpleMarkerSymbol(
+            SimpleMarkerSymbol.Style.CIRCLE,
+            ContextCompat.getColor(this, R.color.colorTransparentOrange),
+            20f
+        )
+        // create simple renderer
+        val pointRenderer = SimpleRenderer(pointSymbol)
+        graphicsOverlay.renderer = pointRenderer
+        graphicsOverlay.graphics.add(pointGraphic)
+        currentViewpoint = Point(77.63, 12.95, spatialReference)
+        mapView.setViewpointCenterAsync(currentViewpoint, defaultMapScale)
+    }
+
+    private fun addPolyline() {
+        // create line
+        val lineGeometry = PolylineBuilder(spatialReference).apply {
+            addPoint(77.63, 12.95)
+            addPoint(77.646358, 12.978973)
+            addPoint(77.691623, 12.974371)
+            addPoint(77.63, 12.95)
+        }
+        // create graphic for polyline
+        val lineGraphic = Graphic(lineGeometry.toGeometry())
+        // solid blue line symbol
+        val lineSymbol = SimpleLineSymbol(SimpleLineSymbol.Style.SOLID, Color.BLUE, 5f)
+        // create simple renderer
+        val lineRenderer = SimpleRenderer(lineSymbol)
+        graphicsOverlay.renderer = lineRenderer
+        graphicsOverlay.graphics.add(lineGraphic)
+        currentViewpoint = Point(77.63, 12.95, spatialReference)
+        mapView.setViewpointCenterAsync(currentViewpoint, defaultMapScale)
+    }
+
+    private fun addPolygon() {
+        // create polygon
+        val polygonGeometry = PolygonBuilder(spatialReference).apply {
+            addPoint(77.63, 12.95)
+            addPoint(77.636358, 12.978973)
+            addPoint(77.691623, 12.974371)
+            addPoint(77.63, 12.95)
+        }
+        // create graphic for polygon
+        val polygonGraphic = Graphic(polygonGeometry.toGeometry())
+        // solid yellow polygon symbol
+        val polygonSymbol = SimpleFillSymbol(SimpleFillSymbol.Style.SOLID, Color.YELLOW, null)
+        // create simple renderer
+        val polygonRenderer = SimpleRenderer(polygonSymbol)
+        graphicsOverlay.renderer = polygonRenderer
+        graphicsOverlay.graphics.add(polygonGraphic)
+        currentViewpoint = Point(77.63, 12.95, spatialReference)
+        mapView.setViewpointCenterAsync(currentViewpoint, defaultMapScale)
     }
 
     private fun showDirections() {
@@ -232,7 +367,7 @@ class MainActivity : AppCompatActivity() {
             routeOverlay.graphics.clear()
             routeOverlay.graphics.add(routeGraphic)
 
-            // Add the directions to the textbox.
+            // Add the directions to the text box.
             directions = firstResult.directionManeuvers.toMutableList()
         } catch (e: Exception) {
             showMessage(
@@ -245,13 +380,12 @@ class MainActivity : AppCompatActivity() {
     private fun listenToMapTap() {
         mapView.onTouchListener = object : DefaultMapViewOnTouchListener(this, mapView) {
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                val point = android.graphics.Point(
+                val screenPoint = android.graphics.Point(
                     e.x.roundToInt(),
                     e.y.roundToInt()
                 )
-                val mapPoint =
-                    mMapView.screenToLocation(point)
-                handleMapTap(mapPoint as Geometry)
+                val mapPoint = mMapView.screenToLocation(screenPoint)
+                handleMapTap(mapPoint)
                 return true
             }
         }
@@ -267,7 +401,7 @@ class MainActivity : AppCompatActivity() {
         when (currentSampleState) {
             SampleState.NotReady -> {
                 addStopButton.isEnabled = false
-                addBarrierButton.isEnabled = false
+                addPolylineButton.isEnabled = false
                 resetButton.isEnabled = false
                 reorderStopsCheckbox.isChecked = false
                 preserveLastStopCheckbox.isChecked = false
@@ -277,10 +411,11 @@ class MainActivity : AppCompatActivity() {
                 statusLabel.text = "Preparing sample..."
             }
             SampleState.AddingBarriers -> statusLabel.text = "Tap the map to add a barrier."
+            SampleState.AddingCircle -> statusLabel.text = "Tap the map to add a circle."
             SampleState.AddingStops -> statusLabel.text = "Tap the map to add a stop."
             SampleState.Ready -> {
                 addStopButton.isEnabled = true
-                addBarrierButton.isEnabled = true
+                addPolylineButton.isEnabled = true
                 resetButton.isEnabled = true
                 reorderStopsCheckbox.isEnabled = true
                 preserveLastStopCheckbox.isEnabled = true
@@ -295,7 +430,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleMapTap(geometry: Geometry) {
+    private fun handleMapTap(mapPoint: Point) {
+        val geometry = mapPoint as Geometry
         // Normalize geometry - important for geometries that will be sent to a server for processing.
         val geometryNormalized = GeometryEngine.normalizeCentralMeridian(geometry)
 
@@ -304,14 +440,14 @@ class MainActivity : AppCompatActivity() {
                 // Buffer the tapped point to create a larger barrier.
                 val bufferedGeometry = GeometryEngine.bufferGeodetic(
                     geometryNormalized,
-                    500.0,
+                    100.0,
                     LinearUnit(LinearUnitId.METERS),
                     Double.NaN,
                     GeodeticCurveType.GEODESIC
                 )
 
                 // Create the graphic to show the barrier.
-                val barrierGraphic = Graphic(bufferedGeometry as Geometry, barrierSymbol)
+                val barrierGraphic = Graphic(bufferedGeometry, barrierSymbol)
 
                 // Add the graphic to the overlay - this will cause it to appear on the map.
                 barriersOverlay.graphics.add(barrierGraphic)
@@ -335,6 +471,9 @@ class MainActivity : AppCompatActivity() {
                 // Add the graphic to the overlay - this will cause it to appear on the map.
                 stopsOverlay.graphics.add(stopGraphic)
             }
+            SampleState.AddingCircle -> {
+                addCirclePolyGon(mapPoint)
+            }
             else -> {
 
             }
@@ -342,15 +481,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getPictureMarker(): PictureMarkerSymbol {
-        val icon = BitmapFactory.decodeResource(resources, R.drawable.icon_stop)
+        val bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_stop)
 //        val scaledBitmap = Bitmap.createScaledBitmap(icon, 100, 100, false)
-        return PictureMarkerSymbol.createAsync(BitmapDrawable(resources, icon)).get()
+        return PictureMarkerSymbol.createAsync(BitmapDrawable(resources, bitmap)).get()
     }
 
     companion object {
         // URL to the network analysis service.
         private const val routeServiceUrl =
             "https://sampleserver6.arcgisonline.com/arcgis/rest/services/NetworkAnalysis/SanDiego/NAServer/Route"
+//            "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World/"
     }
 
 }

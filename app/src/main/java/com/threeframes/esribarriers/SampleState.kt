@@ -5,5 +5,6 @@ enum class SampleState {
     Ready,
     AddingStops,
     AddingBarriers,
+    AddingCircle,
     Routing
 }
